@@ -6,6 +6,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#198754">
+<link rel="manifest" href="{% static 'manifest.json' %}">
+<meta name="theme-color" content="#198754">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 
     <title>{% block title %}IponPM - Personal Finance Tracker{% endblock %}</title>
 
@@ -178,6 +183,7 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/pwa-register.js' %}"></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>
