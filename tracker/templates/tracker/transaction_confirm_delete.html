@@ -1,0 +1,50 @@
+
+{% extends 'tracker/base.html' %}
+
+{% block title %}Delete Transaction | IponPM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card page-card p-4 p-md-5">
+            <div class="text-center mb-4">
+                <div class="text-danger mb-3">
+                    <icon></icon>
+                </div>
+                <h1 class="h3 fw-bold">Delete Transaction?</h1>
+                <p class="text-muted">
+                    This action cannot be undone.
+                </p>
+            </div>
+
+            <div class="bg-light rounded-3 p-3 mb-4">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Description</span>
+                    <strong>{{ transaction.description }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Category</span>
+                    <strong>{{ transaction.category.name }}</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Amount</span>
+                    <strong>₱{{ transaction.amount|floatformat:2 }}</strong>
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{% url 'transaction_list' %}"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        Confirm Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

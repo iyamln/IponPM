@@ -1,0 +1,98 @@
+
+{% extends 'tracker/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">My Savings</h2>
+            <p class="text-muted mb-0">Manage your savings goals and balances.</p>
+        </div>
+        <a href="{% url 'savings_create' %}" class="btn btn-success">
+            + New Goal
+        </a>
+    </div>
+
+    {% if goals %}
+    <div class="row g-4">
+        {% for goal in goals %}
+        <div class="col-md-6 col-xl-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h5 class="fw-bold">{{ goal.name }}</h5>
+                        <span class="badge
+                            {% if goal.status == 'completed' %}bg-success
+                            {% elif goal.status == 'paused' %}bg-secondary
+                            {% else %}bg-primary{% endif %}">
+                            {{ goal.get_status_display }}
+                        </span>
+                    </div>
+
+                    <p class="text-muted small mb-1">Current savings</p>
+                    <h3 class="text-success">
+                        ₱{{ goal.current_amount|floatformat:2 }}
+                    </h3>
+
+                    <div class="d-flex justify-content-between small mt-3">
+                        <span>Target</span>
+                        <strong>₱{{ goal.target_amount|floatformat:2 }}</strong>
+                    </div>
+
+                    <div class="progress my-2" style="height: 10px;">
+                        <div class="progress-bar bg-success"
+                             role="progressbar"
+                             style="width: {{ goal.progress }}%;"
+                             aria-valuenow="{{ goal.progress }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+
+                    <p class="small text-muted">
+                        {{ goal.progress|floatformat:1 }}% complete
+                    </p>
+
+                    {% if goal.target_date %}
+                    <p class="small">
+                        <strong>Target date:</strong> {{ goal.target_date }}
+                    </p>
+                    {% endif %}
+
+                    <p class="small">
+                        <strong>Remaining:</strong>
+                        ₱{{ goal.remaining|floatformat:2 }}
+                    </p>
+
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'savings_deposit' goal.pk %}"
+                           class="btn btn-success">Add Savings</a>
+                        <a href="{% url 'savings_withdraw' goal.pk %}"
+                           class="btn btn-outline-warning">Withdraw</a>
+                        <a href="{% url 'savings_history' goal.pk %}"
+                           class="btn btn-outline-primary">View History</a>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'savings_update' goal.pk %}"
+                               class="btn btn-outline-secondary flex-fill">Edit</a>
+                            <a href="{% url 'savings_delete' goal.pk %}"
+                               class="btn btn-outline-danger flex-fill">Delete</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <h5>No savings goals yet</h5>
+            <p class="text-muted">Create your first goal to start tracking your savings.</p>
+            <a href="{% url 'savings_create' %}" class="btn btn-success">
+                Create Savings Goal
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

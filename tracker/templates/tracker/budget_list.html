@@ -1,0 +1,59 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Budgets | IponPM{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">My Budgets</h2>
+        <p class="text-muted mb-0">Choose a custom date range for every budget.</p>
+    </div>
+    <a href="{% url 'budget_create' %}" class="btn btn-success">+ Create Budget</a>
+</div>
+
+{% if budget_data %}
+<div class="row g-4">
+    {% for item in budget_data %}
+    <div class="col-md-6 col-xl-4">
+        <div class="card page-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h5 class="fw-bold mb-1">{{ item.budget.category.name }}</h5>
+                    <span class="badge bg-secondary">{{ item.budget.category.get_category_type_display }}</span>
+                </div>
+                <span class="rounded-circle border" style="width:22px;height:22px;background-color:{{ item.budget.category.color }};"></span>
+            </div>
+            <p class="text-muted small mb-1">Custom budget period</p>
+            <p class="fw-semibold">{{ item.period_start|date:"M d, Y" }} – {{ item.period_end|date:"M d, Y" }}</p>
+            <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted small">Spent</span>
+                <strong>₱{{ item.spent|floatformat:2 }}</strong>
+            </div>
+            <div class="progress mb-3" style="height:9px;">
+                <div class="progress-bar {% if item.over_budget %}bg-danger{% else %}bg-success{% endif %}"
+                     role="progressbar" style="width:{{ item.percent }}%;"
+                     aria-valuenow="{{ item.percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <div class="d-flex justify-content-between small mb-2">
+                <span class="text-muted">Budget limit</span>
+                <strong>₱{{ item.budget.amount|floatformat:2 }}</strong>
+            </div>
+            {% if item.over_budget %}
+                <p class="text-danger small mb-3">Over budget by ₱{{ item.over_amount|floatformat:2 }}</p>
+            {% else %}
+                <p class="text-success small mb-3">Remaining: ₱{{ item.remaining|floatformat:2 }}</p>
+            {% endif %}
+            <div class="mt-auto d-flex gap-2">
+                <a href="{% url 'budget_update' item.budget.pk %}" class="btn btn-outline-primary btn-sm">Edit</a>
+                <a href="{% url 'budget_delete' item.budget.pk %}" class="btn btn-outline-danger btn-sm">Delete</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card page-card p-5 text-center">
+    <h5 class="fw-bold">No budgets yet</h5>
+    <p class="text-muted">Create a budget and choose its own start and end dates.</p>
+    <a href="{% url 'budget_create' %}" class="btn btn-success mx-auto">Create Your First Budget</a>
+</div>
+{% endif %}
+{% endblock %}

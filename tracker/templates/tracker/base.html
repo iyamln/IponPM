@@ -1,0 +1,178 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#198754">
+
+    <title>{% block title %}IponPM - Personal Finance Tracker{% endblock %}</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f5f7f6;
+            color: #212529;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background-color: #198754;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            letter-spacing: 0.3px;
+        }
+
+        .navbar .nav-link {
+            color: rgba(255, 255, 255, 0.9);
+            padding: 0.6rem 0.8rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s ease;
+        }
+
+        .navbar .nav-link:hover,
+        .navbar .nav-link.active {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .page-container {
+            padding-top: 2rem;
+            padding-bottom: 3rem;
+        }
+
+        .page-card {
+            background-color: #ffffff;
+            border: 1px solid #e7ece9;
+            border-radius: 1rem;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+        }
+
+        .navbar-toggler {
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.2);
+        }
+
+        footer {
+            color: #6c757d;
+            font-size: 0.875rem;
+            padding: 1rem 0;
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'dashboard' %}">
+            IponPM
+        </a>
+
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#mainNavbar"
+            aria-controls="mainNavbar"
+            aria-expanded="false"
+            aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNavbar">
+            {% if user.is_authenticated %}
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard' %}">
+                            Dashboard
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'budget_list' %}">
+                            Budgets
+                        </a>
+                    </li>
+
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'transaction_list' %}">
+                            Transactions
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'savings_list' %}">
+                            Savings
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'category_list' %}">
+                            Categories
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-white">
+                        Hello, {{ user.username }}
+                    </span>
+
+                    <form method="post" action="{% url 'logout' %}" class="m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-light btn-sm">
+                            Logout
+                        </button>
+                    </form>
+                </div>
+            {% else %}
+                <div class="ms-auto">
+                    <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm">
+                        Login
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<main class="container page-container">
+    {% if messages %}
+        {% for message in messages %}
+            <div
+                class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show"
+                role="alert">
+                {{ message }}
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Close">
+                </button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="container text-center">
+    IponPM &copy; {% now "Y" %} · Personal Finance Tracker
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

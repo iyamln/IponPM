@@ -1,0 +1,157 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Dashboard | IponPM{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <h1 class="fw-bold mb-1">Welcome, {{ request.user.username }}!</h1>
+        <p class="text-muted mb-0">Your financial overview for {{ current_month }}.</p>
+    </div>
+    <a href="{% url 'transaction_create' %}" class="btn btn-success">+ Add Transaction</a>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4"><div class="card page-card p-4 h-100">
+        <p class="text-muted mb-2">Income This Month</p>
+        <h2 class="fw-bold text-success mb-0">₱{{ total_income|floatformat:2 }}</h2>
+    </div></div>
+    <div class="col-md-4"><div class="card page-card p-4 h-100">
+        <p class="text-muted mb-2">Expenses This Month</p>
+        <h2 class="fw-bold text-danger mb-0">₱{{ total_expenses|floatformat:2 }}</h2>
+    </div></div>
+    <div class="col-md-4"><div class="card page-card p-4 h-100">
+        <p class="text-muted mb-2">Net This Month</p>
+        <h2 class="fw-bold mb-0 {% if net_total < 0 %}text-danger{% else %}text-success{% endif %}">₱{{ net_total|floatformat:2 }}</h2>
+        <small class="text-muted mt-2">Income minus expenses</small>
+    </div></div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-5"><div class="card page-card p-4 h-100">
+        <h2 class="h5 fw-bold">Spending by Category</h2>
+        <p class="text-muted small">Expense distribution for {{ current_month }}</p>
+        <div style="position:relative;height:300px;"><canvas id="categoryChart"></canvas></div>
+        {% if not category_labels %}<p class="text-muted text-center mt-3 mb-0">Add expenses this month to see your category breakdown.</p>{% endif %}
+    </div></div>
+    <div class="col-lg-7"><div class="card page-card p-4 h-100">
+        <h2 class="h5 fw-bold">Monthly Cash Flow</h2>
+        <p class="text-muted small">Income versus expenses over the last six months</p>
+        <div style="position:relative;height:300px;"><canvas id="trendChart"></canvas></div>
+    </div></div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-7"><div class="card page-card p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <h2 class="h5 fw-bold mb-0">Budget Progress</h2>
+            <a href="{% url 'budget_list' %}" class="btn btn-sm btn-outline-success">Manage Budgets</a>
+        </div>
+        {% for budget in budget_data %}
+        <div class="mb-4">
+            <div class="d-flex justify-content-between gap-3 mb-1">
+                <span class="fw-semibold">{{ budget.name }}</span>
+                <span class="small {% if budget.over_budget %}text-danger{% else %}text-muted{% endif %}">
+                    ₱{{ budget.spent|floatformat:2 }} / ₱{{ budget.amount|floatformat:2 }}
+                </span>
+            </div>
+            <small class="text-muted d-block mb-2">{{ budget.period_start|date:"M d, Y" }} – {{ budget.period_end|date:"M d, Y" }}</small>
+            <div class="progress mb-2" style="height:9px;">
+                <div class="progress-bar {% if budget.over_budget %}bg-danger{% else %}bg-success{% endif %}" role="progressbar" style="width:{{ budget.percent }}%;" aria-valuenow="{{ budget.percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            {% if budget.over_budget %}
+            <small class="text-danger">Over budget by ₱{{ budget.over_amount|floatformat:2 }}</small>
+            {% else %}
+            <small class="text-muted">₱{{ budget.remaining|floatformat:2 }} remaining</small>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="text-center py-4">
+            <p class="text-muted">You haven't created any budgets yet.</p>
+            <a href="{% url 'budget_create' %}" class="btn btn-success">Create a Budget</a>
+        </div>
+        {% endfor %}
+    </div></div>
+    <div class="col-lg-5"><div class="card page-card p-4 h-100">
+        <h2 class="h5 fw-bold mb-1">Financial Insights</h2>
+        <p class="text-muted small mb-4">Observations based on your recorded transactions</p>
+        {% for insight in insights %}
+        <div class="p-3 rounded-3 mb-3" style="background:#edf7f0;"><p class="mb-0">{{ insight }}</p></div>
+        {% empty %}
+        <p class="text-muted">Insights will appear here.</p>
+        {% endfor %}
+        
+    </div></div>
+</div>
+
+<div class="card page-card overflow-hidden">
+    <div class="d-flex justify-content-between align-items-center p-4 border-bottom">
+        <div><h2 class="h5 fw-bold mb-1">Recent Transactions</h2><p class="text-muted small mb-0">Your latest activity</p></div>
+        <a href="{% url 'transaction_list' %}" class="text-success text-decoration-none">View All</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light"><tr><th class="ps-4">Description</th><th>Category</th><th>Date</th><th class="text-end pe-4">Amount</th></tr></thead>
+            <tbody>
+            {% for transaction in recent_transactions %}
+            <tr>
+                <td class="ps-4"><div class="fw-semibold">{{ transaction.description }}</div><small class="text-muted">{{ transaction.get_payment_method_display }}</small></td>
+                <td>{{ transaction.category.name }}</td>
+                <td>{{ transaction.transaction_date|date:"M d, Y" }}</td>
+                <td class="text-end pe-4 fw-semibold {% if transaction.transaction_type == 'income' %}text-success{% else %}text-danger{% endif %}">{% if transaction.transaction_type == 'income' %}+{% else %}-{% endif %}₱{{ transaction.amount|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center py-5"><h5>No transactions yet</h5><a href="{% url 'transaction_create' %}" class="btn btn-success">Add Your First Transaction</a></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{ category_labels|json_script:"category-labels-data" }}
+{{ category_values|json_script:"category-values-data" }}
+{{ month_labels|json_script:"month-labels-data" }}
+{{ income_values|json_script:"income-values-data" }}
+{{ expense_values|json_script:"expense-values-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const categoryLabels = JSON.parse(document.getElementById('category-labels-data').textContent);
+const categoryValues = JSON.parse(document.getElementById('category-values-data').textContent);
+const monthLabels = JSON.parse(document.getElementById('month-labels-data').textContent);
+const incomeValues = JSON.parse(document.getElementById('income-values-data').textContent);
+const expenseValues = JSON.parse(document.getElementById('expense-values-data').textContent);
+
+if (categoryLabels.length > 0) {
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'doughnut',
+        data: {labels: categoryLabels, datasets: [{
+            data: categoryValues,
+            backgroundColor: ['#167d57','#52a879','#8bc9a5','#e8b45b','#5c88c4','#bd7baf','#e57d69','#9aa6b2'],
+            borderWidth: 2, borderColor: '#ffffff'
+        }]},
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: {position: 'bottom'},
+                tooltip: {callbacks: {label: function(context) {
+                    return context.label + ': ₱' + Number(context.raw).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                }}}
+            }
+        }
+    });
+}
+new Chart(document.getElementById('trendChart'), {
+    type: 'bar',
+    data: {labels: monthLabels, datasets: [
+        {label: 'Income', data: incomeValues, backgroundColor: '#167d57', borderRadius: 5},
+        {label: 'Expenses', data: expenseValues, backgroundColor: '#e57d69', borderRadius: 5}
+    ]},
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: {mode: 'index', intersect: false},
+        scales: {y: {beginAtZero: true, ticks: {callback: function(value) {
+            return '₱' + Number(value).toLocaleString('en-PH');
+        }}}},
+        plugins: {legend: {position: 'bottom'}}
+    }
+});
+</script>
+{% endblock %}

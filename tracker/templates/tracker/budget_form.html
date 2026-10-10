@@ -1,0 +1,40 @@
+{% extends 'tracker/base.html' %}
+{% block title %}{{ title }} | IponPM{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card page-card p-4">
+            <h2 class="fw-bold mb-1">{{ title }}</h2>
+            <p class="text-muted mb-4">Set a spending limit and choose any start and end dates.</p>
+            <div class="alert alert-info small">
+                Your budget covers both selected dates, including the start date and end date.
+                Example: October 3 through October 20 includes transactions dated October 3–20.
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+                {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                    {% if field.name == 'amount' %}
+                    <div class="form-text">Enter the maximum spending limit in pesos.</div>
+                    {% elif field.name == 'month' %}
+                    <div class="form-text">Choose the first day covered by this budget.</div>
+                    {% elif field.name == 'end_date' %}
+                    <div class="form-text">Choose the last day covered by this budget.</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-success">Save Budget</button>
+                    <a href="{% url 'budget_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
