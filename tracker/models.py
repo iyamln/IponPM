@@ -151,3 +151,46 @@ class SavingsTransaction(models.Model):
 
     def __str__(self):
         return f"{self.get_transaction_type_display()} - {self.goal.name}: {self.amount}"
+
+
+class Loan(models.Model):
+    STATUS_CHOICES = [('active', 'Ongoing'), ('paid', 'Fully Paid'), ('paused', 'Paused')]
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='loans')
+    provider = models.CharField(max_length=100, help_text='Example: TikTok PayLater')
+    item_name = models.CharField(max_length=200)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0.01)])
+    purchase_date = models.DateField(default=timezone.localdate)
+    due_date = models.DateField(null=True, blank=True, help_text='Next payment due date, if applicable')
+    installment_count = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
+    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['due_date', '-created_at']
+
+    def refresh_status(self):
+        paid = self.payments.aggregate(total=models.Sum('amount'))['total'] or 0
+        remaining = max(self.total_amount - paid, 0)
+        new_status = 'paid' if remaining <= 0 else ('active' if self.status == 'paid' else self.status)
+        if self.status != new_status:
+            self.status = new_status
+            self.save(update_fields=['status'])
+
+    def __str__(self):
+        return f'{self.provider}: {self.item_name}'
+
+
+class LoanPayment(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='loan_payments')
+    loan = models.ForeignKey(Loan, on_delete=models.CASCADE, related_name='payments')
+    amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0.01)])
+    payment_date = models.DateField(default=timezone.localdate)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-payment_date', '-created_at']
+
+    def __str__(self):
+        return f'{self.loan} payment: {self.amount}'

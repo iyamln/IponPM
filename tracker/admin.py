@@ -40,3 +40,7 @@ class SavingsGoalAdmin(admin.ModelAdmin):
         'user',
     )
     list_filter = ('status',)
+
+from .models import Loan, LoanPayment
+admin.site.register(Loan)
+admin.site.register(LoanPayment)

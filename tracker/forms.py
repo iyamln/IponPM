@@ -170,3 +170,52 @@ class SavingsTransactionForm(forms.ModelForm):
 
         for field in self.fields.values():
             field.widget.attrs.update({'class': 'form-control'})
+
+
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import get_user_model
+from .models import Loan, LoanPayment
+
+
+class RegistrationForm(UserCreationForm):
+    class Meta:
+        model = get_user_model()
+        fields = ('username', 'email')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].required = True
+        for field in self.fields.values():
+            field.widget.attrs.update({'class': 'form-control'})
+
+
+class LoanForm(forms.ModelForm):
+    class Meta:
+        model = Loan
+        fields = ['provider', 'item_name', 'total_amount', 'purchase_date', 'due_date', 'installment_count', 'notes']
+        labels = {'total_amount': 'Original Loan Amount (₱)', 'due_date': 'Next Due Date', 'installment_count': 'Number of Installments'}
+        widgets = {
+            'purchase_date': forms.DateInput(attrs={'type': 'date'}),
+            'due_date': forms.DateInput(attrs={'type': 'date'}),
+            'total_amount': forms.NumberInput(attrs={'min': '0.01', 'step': '0.01'}),
+            'installment_count': forms.NumberInput(attrs={'min': '1', 'step': '1'}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update({'class': 'form-control'})
+
+
+class LoanPaymentForm(forms.ModelForm):
+    class Meta:
+        model = LoanPayment
+        fields = ['amount', 'payment_date', 'notes']
+        labels = {'amount': 'Payment Amount (₱)', 'payment_date': 'Payment Date'}
+        widgets = {'amount': forms.NumberInput(attrs={'min': '0.01', 'step': '0.01'}), 'payment_date': forms.DateInput(attrs={'type': 'date'}), 'notes': forms.Textarea(attrs={'rows': 3})}
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.fields['payment_date'].initial = timezone.localdate()
+        for field in self.fields.values():
+            field.widget.attrs.update({'class': 'form-control'})

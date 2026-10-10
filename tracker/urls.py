@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path('register/', views.register, name='register'),
 
     # Transactions
     path('transactions/', views.transaction_list, name='transaction_list'),
@@ -31,4 +32,12 @@ urlpatterns = [
     path('savings/<int:pk>/deposit/', views.savings_deposit, name='savings_deposit'),
     path('savings/<int:pk>/withdraw/', views.savings_withdraw, name='savings_withdraw'),
     path('savings/<int:pk>/history/', views.savings_history, name='savings_history'),
+
+    # Loans and repayments
+    path('loans/', views.loan_list, name='loan_list'),
+    path('loans/add/', views.loan_create, name='loan_create'),
+    path('loans/<int:pk>/edit/', views.loan_update, name='loan_update'),
+    path('loans/<int:pk>/delete/', views.loan_delete, name='loan_delete'),
+    path('loans/<int:pk>/pay/', views.loan_payment_create, name='loan_payment_create'),
+    path('loans/<int:pk>/history/', views.loan_history, name='loan_history'),
 ]

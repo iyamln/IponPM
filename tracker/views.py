@@ -17,8 +17,8 @@ from .models import Budget, Category, Transaction
 from django.db import transaction as db_transaction
 from django.db.models import F
 
-from .forms import SavingsGoalForm, SavingsTransactionForm
-from .models import SavingsGoal, SavingsTransaction
+from .forms import SavingsGoalForm, SavingsTransactionForm, RegistrationForm, LoanForm, LoanPaymentForm
+from .models import SavingsGoal, SavingsTransaction, Loan, LoanPayment
 
 def last_day_of_month(year, month):
     return calendar.monthrange(year, month)[1]
@@ -497,4 +497,97 @@ def savings_history(request, pk):
     return render(request, 'tracker/savings_history.html', {
         'goal': goal,
         'activities': activities,
+    })
+
+
+from django.contrib.auth import login
+from django.db.models import Sum as AggregateSum
+
+
+def register(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    form = RegistrationForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        user = form.save()
+        login(request, user)
+        messages.success(request, 'Your IponPM account has been created.')
+        return redirect('dashboard')
+    return render(request, 'registration/register.html', {'form': form})
+
+
+@login_required
+def loan_list(request):
+    loans = list(Loan.objects.filter(user=request.user).prefetch_related('payments'))
+    for loan in loans:
+        loan.total_paid = loan.payments.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        loan.remaining_balance = max(loan.total_amount - loan.total_paid, Decimal('0.00'))
+        loan.progress = min(float(loan.total_paid / loan.total_amount * 100), 100) if loan.total_amount else 0
+    total_outstanding = sum((loan.remaining_balance for loan in loans), Decimal('0.00'))
+    return render(request, 'tracker/loan_list.html', {'loans': loans, 'total_outstanding': total_outstanding})
+
+
+@login_required
+def loan_create(request):
+    form = LoanForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        loan = form.save(commit=False)
+        loan.user = request.user
+        loan.save()
+        messages.success(request, 'Loan added successfully.')
+        return redirect('loan_list')
+    return render(request, 'tracker/loan_form.html', {'form': form, 'title': 'Add Loan'})
+
+
+@login_required
+def loan_update(request, pk):
+    loan = get_object_or_404(Loan, pk=pk, user=request.user)
+    form = LoanForm(request.POST or None, instance=loan)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Loan updated successfully.')
+        return redirect('loan_list')
+    return render(request, 'tracker/loan_form.html', {'form': form, 'title': 'Edit Loan'})
+
+
+@login_required
+def loan_delete(request, pk):
+    loan = get_object_or_404(Loan, pk=pk, user=request.user)
+    if request.method == 'POST':
+        loan.delete()
+        messages.success(request, 'Loan and its payment history deleted.')
+        return redirect('loan_list')
+    return render(request, 'tracker/loan_confirm_delete.html', {'loan': loan})
+
+
+@login_required
+def loan_payment_create(request, pk):
+    loan = get_object_or_404(Loan, pk=pk, user=request.user)
+    form = LoanPaymentForm(request.POST or None)
+    already_paid = loan.payments.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    loan.total_paid = already_paid
+    loan.remaining_balance = max(loan.total_amount - already_paid, Decimal('0.00'))
+    if request.method == 'POST' and form.is_valid():
+        amount = form.cleaned_data['amount']
+        if amount > loan.remaining_balance:
+            form.add_error('amount', f'Payment cannot exceed the remaining balance of ₱{loan.remaining_balance:,.2f}.')
+        else:
+            payment = form.save(commit=False)
+            payment.user = request.user
+            payment.loan = loan
+            payment.save()
+            loan.refresh_status()
+            messages.success(request, 'Loan payment recorded.')
+            return redirect('loan_history', pk=loan.pk)
+    return render(request, 'tracker/loan_payment_form.html', {'form': form, 'loan': loan})
+
+
+@login_required
+def loan_history(request, pk):
+    loan = get_object_or_404(Loan, pk=pk, user=request.user)
+    payments = LoanPayment.objects.filter(loan=loan, user=request.user)
+    total_paid = payments.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    return render(request, 'tracker/loan_history.html', {
+        'loan': loan, 'payments': payments, 'total_paid': total_paid,
+        'remaining_balance': max(loan.total_amount - total_paid, Decimal('0.00')),
     })
